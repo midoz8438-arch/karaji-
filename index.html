@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0E6B3C">
+<title>كراجي - بيع وشراء السيارات في الجزائر</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{
+  --bg:#F1F4F2; --card:#FFFFFF; --ink:#16211D; --muted:#5B6B65; --line:#D9E0DC;
+  --green:#0E6B3C; --green-ink:#FFFFFF; --red:#C73A2E; --glass:#CFE3EC; --tint:#E6ECE9;
+  --plate:#FFFFFF; --plate-ink:#111111;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#0F1513; --card:#17201D; --ink:#EAF0ED; --muted:#9BAAA4; --line:#2A3632;
+    --green:#3DBA7A; --green-ink:#07130D; --red:#EF6B5E; --glass:#2B4552; --tint:#1F2B27;
+    --plate:#F4F4F0; --plate-ink:#111111;
+  }
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{
+  font-family:"Noto Kufi Arabic","Tajawal","Segoe UI",Tahoma,system-ui,sans-serif;
+  background:var(--bg);color:var(--ink);line-height:1.6;font-size:15px;padding-bottom:90px;
+}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--green);outline-offset:2px}
+.num{direction:ltr;unicode-bidi:isolate;display:inline-block}
+
+header{position:sticky;top:0;z-index:10;background:var(--bg);padding:14px 16px 10px;border-bottom:1px solid var(--line)}
+.top{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;gap:10px}
+.brand{font-size:22px;font-weight:800}
+.brand small{display:block;font-size:12px;font-weight:400;color:var(--muted)}
+.userbtn{
+  border:1.5px solid var(--green);color:var(--green);background:none;border-radius:999px;
+  padding:7px 16px;font-weight:700;display:flex;align-items:center;gap:8px;
+}
+.userbtn.in{background:var(--green);color:var(--green-ink)}
+.av{width:24px;height:24px;border-radius:50%;background:var(--green-ink);color:var(--green);display:inline-flex;align-items:center;justify-content:center;font-size:13px;font-weight:800}
+.search{width:100%;padding:12px 14px;border:1.5px solid var(--line);border-radius:10px;background:var(--card)}
+.filters{display:flex;gap:8px;overflow-x:auto;padding:10px 0 2px;scrollbar-width:none}
+.filters::-webkit-scrollbar{display:none}
+.filters select{flex:0 0 auto;padding:8px 10px;border:1.5px solid var(--line);border-radius:10px;background:var(--card);max-width:170px}
+.filters select.on{border-color:var(--green);color:var(--green);font-weight:600}
+
+.meta{display:flex;justify-content:space-between;align-items:center;padding:12px 16px 4px;color:var(--muted);font-size:13px;gap:8px}
+.meta .acts{display:flex;gap:6px}
+.meta button{background:none;border:0;color:var(--green);font-weight:700;padding:4px 6px}
+.meta button.sel{background:var(--green);color:var(--green-ink);border-radius:999px;padding:4px 12px}
+
+main{max-width:760px;margin:0 auto}
+.list{list-style:none}
+.row{display:flex;gap:12px;padding:14px 16px;border:0;border-bottom:1px solid var(--line);width:100%;background:none;text-align:right;align-items:stretch}
+.row:hover{background:var(--tint)}
+.thumb{flex:0 0 118px;height:92px;background:var(--tint);border-radius:10px;display:flex;align-items:center;justify-content:center;padding:6px;overflow:hidden;position:relative}
+.thumb svg{width:100%;height:auto}
+.thumb img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.thumb .cnt{position:absolute;bottom:4px;left:4px;background:rgba(0,0,0,.65);color:#fff;font-size:11px;padding:0 6px;border-radius:999px}
+.info{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.title{font-weight:700;font-size:16px;line-height:1.35}
+.sub{color:var(--muted);font-size:13px}
+.price{font-weight:800;font-size:17px;color:var(--green);margin-top:auto}
+.price span.u{font-size:13px;font-weight:600;margin-inline-start:3px}
+.where{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted)}
+.plate{
+  display:inline-flex;align-items:center;justify-content:center;min-width:30px;height:22px;padding:0 5px;
+  background:var(--plate);color:var(--plate-ink);border:2px solid var(--plate-ink);border-radius:4px;
+  font-family:ui-monospace,Menlo,Consolas,monospace;font-weight:800;font-size:13px;direction:ltr;
+  box-shadow:inset 0 -3px 0 var(--green);
+}
+.plate.big{height:30px;min-width:40px;font-size:17px}
+.mine-tag{font-size:11px;background:var(--green);color:var(--green-ink);padding:0 7px;border-radius:999px;margin-inline-start:6px;font-weight:600}
+
+.empty{padding:44px 24px;text-align:center;color:var(--muted)}
+.empty b{display:block;color:var(--ink);font-size:17px;margin-bottom:6px}
+.empty button{margin-top:12px;background:var(--green);color:var(--green-ink);border:0;border-radius:10px;padding:9px 18px;font-weight:700}
+.setup{margin:16px;padding:16px;border:1.5px dashed var(--red);border-radius:12px;list-style:none}
+.setup b{color:var(--red)}
+
+.fab{
+  position:fixed;bottom:calc(16px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);
+  background:var(--green);color:var(--green-ink);border:0;border-radius:999px;padding:14px 26px;
+  font-weight:700;font-size:16px;box-shadow:0 6px 18px rgba(0,0,0,.25);z-index:20;
+}
+
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:40;display:none;align-items:flex-end;justify-content:center}
+.overlay.open{display:flex}
+.sheet{background:var(--bg);width:100%;max-width:620px;max-height:92vh;overflow-y:auto;border-radius:18px 18px 0 0;padding:18px 16px calc(24px + env(safe-area-inset-bottom));animation:up .22s ease-out}
+@keyframes up{from{transform:translateY(40px);opacity:0}to{transform:none;opacity:1}}
+@media (prefers-reduced-motion:reduce){.sheet{animation:none}}
+.sheet-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.sheet-head h2{font-size:19px}
+.close{background:var(--tint);border:0;border-radius:999px;width:36px;height:36px;font-size:20px;line-height:1}
+.hero{background:var(--tint);border-radius:14px;padding:14px;margin-bottom:12px}
+.hero svg{width:100%;max-width:340px;display:block;margin:0 auto;height:auto}
+.gallery{display:flex;gap:8px;overflow-x:auto;scroll-snap-type:x mandatory;margin-bottom:12px;border-radius:14px}
+.gallery img{flex:0 0 92%;max-height:300px;object-fit:cover;border-radius:12px;scroll-snap-align:center;background:var(--tint);aspect-ratio:4/3}
+.gallery img:only-child{flex-basis:100%}
+.d-price{font-size:26px;font-weight:800;color:var(--green);margin:6px 0 2px}
+.neg{font-size:13px;color:var(--muted);font-weight:500;margin-inline-start:6px}
+.specs{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--line);border:1px solid var(--line);border-radius:12px;overflow:hidden;margin:14px 0}
+.specs div{padding:10px 12px;background:var(--card)}
+.specs div:last-child:nth-child(odd){grid-column:1/-1}
+.specs small{display:block;color:var(--muted);font-size:12px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 12px}
+.chips span{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:2px 12px;font-size:13px}
+.seller{padding:10px 0;color:var(--muted);font-size:14px;border-top:1px solid var(--line);margin-top:6px}
+.seller b{color:var(--ink)}
+.desc{margin:10px 0 14px}
+.actions{display:flex;gap:10px;margin-top:8px}
+.btn{flex:1;text-align:center;text-decoration:none;padding:13px;border-radius:12px;border:0;font-weight:700;font-size:16px;background:var(--green);color:var(--green-ink);display:block}
+.btn.alt{background:var(--card);color:var(--ink);border:1.5px solid var(--line)}
+.btn.danger{background:none;color:var(--red);border:1.5px solid var(--red);margin-top:12px;width:100%}
+.btn:disabled{opacity:.6}
+.note{font-size:13px;color:var(--muted);margin:8px 0}
+
+.tabs{display:flex;background:var(--tint);border-radius:12px;padding:4px;margin-bottom:14px}
+.tabs button{flex:1;border:0;background:none;padding:9px;border-radius:9px;font-weight:700;color:var(--muted)}
+.tabs button.on{background:var(--card);color:var(--ink)}
+.field{margin-bottom:12px}
+.field label{display:block;font-weight:600;margin-bottom:4px;font-size:14px}
+.field input,.field select,.field textarea{width:100%;padding:11px 12px;border:1.5px solid var(--line);border-radius:10px;background:var(--card)}
+.field textarea{min-height:80px;resize:vertical}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.err{color:var(--red);font-size:13px;margin-top:3px}
+.formerr{color:var(--red);font-size:14px;margin:4px 0 10px;font-weight:600}
+.invalid{border-color:var(--red)!important}
+.sect{font-weight:800;margin:18px 0 8px;padding-top:12px;border-top:1px solid var(--line)}
+.opts{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.opts label{display:flex;align-items:center;gap:8px;padding:8px 10px;border:1.5px solid var(--line);border-radius:10px;background:var(--card);font-size:14px}
+.opts input{width:18px;height:18px;accent-color:var(--green)}
+.check{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+.check input{width:18px;height:18px;accent-color:var(--green)}
+.pics{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px}
+.pic{position:relative;aspect-ratio:4/3;border-radius:10px;overflow:hidden;background:var(--tint)}
+.pic img{width:100%;height:100%;object-fit:cover}
+.pic button{position:absolute;top:4px;left:4px;width:26px;height:26px;border-radius:50%;border:0;background:rgba(0,0,0,.7);color:#fff;font-size:16px;line-height:1}
+.addpic{display:flex;align-items:center;justify-content:center;border:2px dashed var(--line);border-radius:10px;aspect-ratio:4/3;color:var(--green);font-weight:700;background:none}
+.toast{position:fixed;top:16px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:999px;z-index:60;font-weight:600;display:none;max-width:90vw}
+.toast.show{display:block}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="top">
+    <div class="brand">كراجي<small>سيارات للبيع في كل ولايات الجزائر</small></div>
+    <button class="userbtn" id="userBtn">دخول</button>
+  </div>
+  <input id="q" class="search" type="search" placeholder="ابحث: ماركة أو موديل (مثال: سيمبول)" aria-label="بحث">
+  <div class="filters">
+    <select id="fWilaya" aria-label="الولاية"></select>
+    <select id="fBrand" aria-label="الماركة"></select>
+    <select id="fPrice" aria-label="السعر الأقصى"></select>
+    <select id="fSort" aria-label="الترتيب">
+      <option value="new">الأحدث</option>
+      <option value="low">الأرخص</option>
+      <option value="high">الأغلى</option>
+      <option value="year">الأحدث موديلاً</option>
+    </select>
+  </div>
+</header>
+
+<main>
+  <div class="meta"><span id="count"></span>
+    <div class="acts"><button id="mineBtn" hidden>إعلاناتي</button><button id="reset" hidden>مسح التصفية</button></div>
+  </div>
+  <ul class="list" id="list"></ul>
+</main>
+
+<button class="fab" id="addBtn">+ بيع سيارتك</button>
+
+<div class="overlay" id="ov" role="dialog" aria-modal="true" aria-labelledby="sheetTitle"><div class="sheet" id="sheet"></div></div>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+/* ============ الإعداد: ضع بيانات مشروعك في Supabase هنا ============ */
+const SUPABASE_URL = "https://xllzawlfwzkqbdkuvoww.supabase.co";
+const SUPABASE_KEY = "sb_publishable_P81qhfIay9FKBGtQGfmvhw_LsXlPLdz";
+/* =================================================================== */
+
+const WILAYAS = ["أدرار","الشلف","الأغواط","أم البواقي","باتنة","بجاية","بسكرة","بشار","البليدة","البويرة","تمنراست","تبسة","تلمسان","تيارت","تيزي وزو","الجزائر","الجلفة","جيجل","سطيف","سعيدة","سكيكدة","سيدي بلعباس","عنابة","قالمة","قسنطينة","المدية","مستغانم","المسيلة","معسكر","ورقلة","وهران","البيض","إليزي","برج بوعريريج","بومرداس","الطارف","تندوف","تيسمسيلت","الوادي","خنشلة","سوق أهراس","تيبازة","ميلة","عين الدفلى","النعامة","عين تموشنت","غرداية","غليزان","تيميمون","برج باجي مختار","أولاد جلال","بني عباس","عين صالح","عين قزام","توقرت","جانت","المغير","المنيعة"];
+const BRANDS = ["رونو","داسيا","هيونداي","كيا","بيجو","سيتروين","فولكسفاغن","سيات","فيات","تويوتا","سوزوكي","شيري","شيفروليه","نيسان","مرسيدس","بي إم دبليو","أودي","أخرى"];
+const COLORS = {"أبيض":"#EDEFEF","رمادي فاتح":"#C4CACE","رمادي غامق":"#5E666B","أسود":"#22262A","أحمر":"#B3261E","أزرق":"#2F5D9B","أخضر":"#1F5A44","بيج":"#B8A98A","برتقالي":"#D9772B"};
+const FUELS = ["بنزين","ديزل","غاز (GPL)"];
+const GEARS = ["يدوي","أوتوماتيك"];
+const PAPERS = ["بطاقة رمادية","استمارة","أخرى"];
+const CONDS = ["ممتازة","جيدة","تحتاج إصلاحات"];
+const ACCS = ["بدون حوادث","حادث بسيط","حادث كبير"];
+const OPTIONS = ["مكيف","شاشة / ملاحة","كاميرا خلفية","حساسات ركن","جلد","فتحة سقف","ABS + وسائد هوائية","قفل مركزي","مثبت سرعة","بلوتوث / USB"];
+const MAX_PICS = 6;
+
+let sb = null, user = null, cars = [], view = "all", loading = true, loadErr = "", pending = [];
+const configured = /^https:\/\//.test(SUPABASE_URL) && SUPABASE_KEY.length > 20;
+
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const fmt = n => Number(n).toLocaleString("fr-FR").replace(/[\u202f\u00a0]/g," ");
+const code = w => String(w).padStart(2,"0");
+const wname = w => WILAYAS[w-1] || "";
+const opts = (arr,sel) => arr.map(x=>`<option${x===sel?" selected":""}>${x}</option>`).join("");
+const wopts = sel => WILAYAS.map((n,i)=>`<option value="${i+1}"${(i+1)==sel?" selected":""}>${code(i+1)} - ${n}</option>`).join("");
+function ago(d){
+  const days = Math.floor((Date.now()-new Date(d))/864e5);
+  if(days<1) return "اليوم"; if(days===1) return "أمس"; if(days<30) return `منذ ${days} يوماً`;
+  const m = Math.floor(days/30); return m===1 ? "منذ شهر" : `منذ ${m} ${m<=10?"أشهر":"شهراً"}`;
+}
+function sellerName(c){
+  const p = c.profiles; if(!p) return "بائع";
+  return `${p.first_name} ${(p.last_name||"").charAt(0)}.`;
+}
+function carSvg(color){
+  return `<svg viewBox="0 0 200 80" aria-hidden="true">
+    <path d="M10 58 L16 46 Q20 40 32 38 L62 34 Q72 20 92 18 L130 18 Q146 20 156 34 L180 40 Q192 43 192 54 L192 58 Q192 63 186 63 L14 63 Q9 63 10 58Z" fill="${color||"#C4CACE"}" stroke="rgba(0,0,0,.35)" stroke-width="1.5"/>
+    <path d="M70 34 Q78 25 92 25 L112 25 L112 34Z" fill="var(--glass)"/><path d="M118 25 L130 25 Q140 27 146 34 L118 34Z" fill="var(--glass)"/>
+    <circle cx="50" cy="63" r="13" fill="#1b1f21"/><circle cx="50" cy="63" r="5.5" fill="#9aa3a8"/>
+    <circle cx="152" cy="63" r="13" fill="#1b1f21"/><circle cx="152" cy="63" r="5.5" fill="#9aa3a8"/></svg>`;
+}
+function toast(t){ const el=$("#toast"); el.textContent=t; el.classList.add("show"); setTimeout(()=>el.classList.remove("show"),2600); }
+
+/* ---------- filters + list ---------- */
+function fillSelects(){
+  $("#fWilaya").innerHTML = `<option value="">كل الولايات</option>` + wopts();
+  $("#fBrand").innerHTML = `<option value="">كل الماركات</option>` + opts(BRANDS);
+  $("#fPrice").innerHTML = `<option value="">أي سعر</option>` + [2,3,4,5,8].map(m=>`<option value="${m*1000000}">حتى ${m} ملايين دج</option>`).join("");
+}
+function filtered(){
+  const q=$("#q").value.trim(), w=$("#fWilaya").value, b=$("#fBrand").value, p=Number($("#fPrice").value)||Infinity, s=$("#fSort").value;
+  let r = cars.filter(c => (view==="all" || (user && c.owner_id===user.id)) &&
+    (!q || (c.brand+" "+c.model).includes(q)) && (!w || c.wilaya==w) && (!b || c.brand===b) && c.price<=p);
+  if(s==="low") r.sort((a,b)=>a.price-b.price);
+  if(s==="high") r.sort((a,b)=>b.price-a.price);
+  if(s==="year") r.sort((a,b)=>b.year-a.year);
+  return r;
+}
+function render(){
+  const list = $("#list");
+  if(!configured || !window.supabase){
+    $("#count").textContent = "";
+    list.innerHTML = `<li class="setup"><b>التطبيق غير موصول بقاعدة البيانات بعد.</b><p>اتبع خطوات الإعداد، ثم ضع الرابط والمفتاح في أعلى هذا الملف داخل <span class="num">SUPABASE_URL</span> و <span class="num">SUPABASE_KEY</span>.</p></li>`;
+    return;
+  }
+  if(loading){ $("#count").textContent="جارٍ التحميل..."; list.innerHTML=""; return; }
+  if(loadErr){ $("#count").textContent=""; list.innerHTML=`<li class="empty"><b>تعذر تحميل الإعلانات</b>${esc(loadErr)}<br><button id="retry">إعادة المحاولة</button></li>`; return; }
+  const r = filtered();
+  const active = $("#q").value || $("#fWilaya").value || $("#fBrand").value || $("#fPrice").value;
+  ["fWilaya","fBrand","fPrice"].forEach(id=>$("#"+id).classList.toggle("on",!!$("#"+id).value));
+  $("#reset").hidden = !active;
+  $("#mineBtn").hidden = !user;
+  $("#mineBtn").classList.toggle("sel", view==="mine");
+  $("#count").textContent = r.length + " سيارة";
+  if(!r.length){
+    list.innerHTML = view==="mine"
+      ? `<li class="empty"><b>لم تنشر أي إعلان بعد</b>انشر سيارتك الأولى في دقيقتين.<br><button id="emptyAdd">بيع سيارتك</button></li>`
+      : `<li class="empty"><b>${cars.length?"لا توجد سيارات بهذه المواصفات":"لا توجد إعلانات بعد"}</b>${cars.length?"جرّب ولاية أخرى أو ارفع السعر الأقصى.":"كن أول من ينشر إعلاناً."}<br>${cars.length?"":'<button id="emptyAdd">بيع سيارتك</button>'}</li>`;
+    return;
+  }
+  list.innerHTML = r.map(c=>`
+   <li><button class="row" data-id="${c.id}">
+     <div class="thumb">${c.photos&&c.photos[0]?`<img src="${esc(c.photos[0])}" alt="" loading="lazy">${c.photos.length>1?`<span class="cnt">${c.photos.length} صور</span>`:""}`:carSvg(c.color)}</div>
+     <div class="info">
+       <div class="title">${esc(c.brand)} ${esc(c.model)}${user&&c.owner_id===user.id?'<span class="mine-tag">إعلانك</span>':''}</div>
+       <div class="sub"><span class="num">${c.year}</span> · <span class="num">${fmt(c.km)}</span> كم · ${esc(c.fuel)}</div>
+       <div class="where"><span class="plate">${code(c.wilaya)}</span>${wname(c.wilaya)} · ${ago(c.created_at)}</div>
+       <div class="price"><span class="num">${fmt(c.price)}</span><span class="u">دج</span></div>
+     </div></button></li>`).join("");
+}
+
+/* ---------- data ---------- */
+async function loadCars(){
+  loading = true; loadErr = ""; render();
+  const {data,error} = await sb.from("cars").select("*, profiles(first_name,last_name)").order("created_at",{ascending:false}).limit(300);
+  loading = false;
+  if(error) loadErr = "تحقق من اتصالك بالإنترنت وإعدادات المشروع."; else cars = data;
+  render();
+}
+function paintUser(){
+  const b = $("#userBtn");
+  if(user){
+    const n = user.user_metadata?.first_name || "حسابي";
+    b.className = "userbtn in"; b.innerHTML = `<span class="av">${esc(n.charAt(0))}</span>${esc(n)}`;
+  } else { b.className = "userbtn"; b.textContent = "دخول"; }
+}
+
+/* ---------- sheets ---------- */
+let lastFocus = null;
+function openSheet(html){
+  lastFocus = document.activeElement;
+  $("#sheet").innerHTML = html; $("#ov").classList.add("open"); $("#sheet").scrollTop = 0;
+  const c = $(".close"); if(c) c.focus();
+}
+function closeSheet(){ $("#ov").classList.remove("open"); if(lastFocus && lastFocus.focus) lastFocus.focus(); }
+const head = t => `<div class="sheet-head"><h2 id="sheetTitle">${t}</h2><button class="close" aria-label="إغلاق">×</button></div>`;
+
+function showCar(id){
+  const c = cars.find(x=>x.id==id); if(!c) return;
+  const mineCar = user && c.owner_id===user.id;
+  const wa = "https://wa.me/213"+c.phone.slice(1)+"?text="+encodeURIComponent(`السلام عليكم، أنا مهتم بسيارة ${c.brand} ${c.model} المعروضة في كراجي`);
+  const specs = [["سنة الصنع",`<span class="num">${c.year}</span>`],["المسافة",`<span class="num">${fmt(c.km)}</span> كم`],["الوقود",esc(c.fuel)],["ناقل الحركة",esc(c.gear)],
+    ["المحرك",esc(c.engine)],["اللون",esc(c.color_name)],["الأوراق",esc(c.papers)],["الحالة",esc(c.condition)],["الحوادث",esc(c.accident)]].filter(s=>s[1]);
+  openSheet(`${head(esc(c.brand)+" "+esc(c.model))}
+    ${c.photos&&c.photos.length?`<div class="gallery">${c.photos.map(p=>`<img src="${esc(p)}" alt="صورة السيارة" loading="lazy">`).join("")}</div>`:`<div class="hero">${carSvg(c.color)}</div>`}
+    <div class="d-price"><span class="num">${fmt(c.price)}</span> دج${c.negotiable?'<span class="neg">قابل للتفاوض</span>':'<span class="neg">السعر نهائي</span>'}</div>
+    <div class="where"><span class="plate big">${code(c.wilaya)}</span>ولاية ${wname(c.wilaya)}</div>
+    <div class="specs">${specs.map(s=>`<div><small>${s[0]}</small><b>${s[1]}</b></div>`).join("")}</div>
+    ${c.options&&c.options.length?`<div class="chips">${c.options.map(o=>`<span>${esc(o)}</span>`).join("")}</div>`:""}
+    ${c.description?`<p class="desc">${esc(c.description)}</p>`:""}
+    <div class="seller">البائع: <b>${esc(sellerName(c))}</b> · نُشر ${ago(c.created_at)}</div>
+    <div class="actions"><a class="btn" href="tel:${esc(c.phone)}">اتصال <span class="num">${esc(c.phone)}</span></a><a class="btn alt" href="${wa}" target="_blank" rel="noopener">واتساب</a></div>
+    ${mineCar?`<button class="btn danger" data-del="${c.id}">حذف إعلاني</button>`:""}`);
+}
+
+const AUTH_ERR = [["Invalid login","البريد أو كلمة السر غير صحيحة"],["already registered","هذا البريد مسجل مسبقاً، سجّل الدخول"],["at least","كلمة السر قصيرة، استعمل 6 أحرف على الأقل"],["not confirmed","أكّد بريدك الإلكتروني أولاً ثم سجّل الدخول"],["rate limit","محاولات كثيرة، انتظر قليلاً ثم أعد المحاولة"],["valid email","البريد الإلكتروني غير صحيح"],["Failed to fetch","لا يوجد اتصال بالإنترنت"]];
+const authMsg = m => (AUTH_ERR.find(e=>String(m).includes(e[0]))||[,"حدث خطأ، أعد المحاولة"])[1];
+
+function showAuth(mode="login", why=""){
+  const su = mode==="signup";
+  openSheet(`${head(su?"إنشاء حساب":"تسجيل الدخول")}
+    <div class="tabs"><button data-tab="login" class="${su?"":"on"}">دخول</button><button data-tab="signup" class="${su?"on":""}">حساب جديد</button></div>
+    ${why?`<p class="note">${why}</p>`:""}
+    <form id="authForm" data-mode="${mode}" novalidate>
+      ${su?`<div class="two">
+        <div class="field"><label for="uFn">الاسم</label><input id="uFn" autocomplete="given-name"></div>
+        <div class="field"><label for="uLn">اللقب</label><input id="uLn" autocomplete="family-name"></div></div>
+      <div class="field"><label for="uWi">الولاية</label><select id="uWi">${wopts(16)}</select></div>
+      <div class="field"><label for="uPh">رقم الهاتف</label><input id="uPh" type="tel" inputmode="tel" placeholder="05XXXXXXXX" autocomplete="tel"></div>`:""}
+      <div class="field"><label for="uEm">البريد الإلكتروني</label><input id="uEm" type="email" inputmode="email" autocomplete="email"></div>
+      <div class="field"><label for="uPw">كلمة السر</label><input id="uPw" type="password" autocomplete="${su?"new-password":"current-password"}" placeholder="6 أحرف على الأقل"></div>
+      ${su?`<p class="note">يظهر اسمك الأول وأول حرف من لقبك وولايتك ورقم هاتفك في إعلاناتك.</p>`:""}
+      <div class="formerr" id="authErr"></div>
+      <button class="btn" style="width:100%" type="submit">${su?"إنشاء الحساب":"دخول"}</button>
+    </form>`);
+}
+async function submitAuth(e){
+  e.preventDefault();
+  const su = e.target.dataset.mode==="signup", v = id => ($("#"+id)?.value||"").trim(), err = m => $("#authErr").textContent = m;
+  const email=v("uEm"), password=$("#uPw").value;
+  if(!email || !password) return err("أدخل البريد وكلمة السر");
+  const btn = e.target.querySelector("button[type=submit]"); btn.disabled = true; err("");
+  if(su){
+    const phone = v("uPh").replace(/[\s.-]/g,"");
+    if(!v("uFn") || !v("uLn")) { btn.disabled=false; return err("أدخل الاسم واللقب"); }
+    if(!/^0[567]\d{8}$/.test(phone)) { btn.disabled=false; return err("رقم هاتف جزائري صحيح، مثال: 0550123456"); }
+    const {data,error} = await sb.auth.signUp({email,password,options:{data:{first_name:v("uFn"),last_name:v("uLn"),wilaya:Number(v("uWi")),phone}}});
+    btn.disabled = false;
+    if(error) return err(authMsg(error.message));
+    if(!data.session){ closeSheet(); return toast("تحقق من بريدك الإلكتروني لتأكيد الحساب"); }
+    closeSheet(); toast("مرحباً بك في كراجي");
+  } else {
+    const {error} = await sb.auth.signInWithPassword({email,password});
+    btn.disabled = false;
+    if(error) return err(authMsg(error.message));
+    closeSheet(); toast("تم تسجيل الدخول");
+  }
+}
+function showAccount(){
+  const m = user.user_metadata||{};
+  openSheet(`${head("حسابي")}
+    <p><b>${esc(m.first_name)} ${esc(m.last_name)}</b></p>
+    <p class="note">${esc(user.email)} · ولاية ${wname(m.wilaya)} · <span class="num">${esc(m.phone)}</span></p>
+    <div class="actions"><button class="btn" data-go="mine">إعلاناتي</button><button class="btn alt" data-go="out">خروج</button></div>`);
+}
+
+/* ---------- ad form ---------- */
+function showForm(){
+  const m = user.user_metadata||{}; pending = [];
+  openSheet(`${head("أضف إعلان بيع")}
+    <form id="adForm" novalidate>
+      <div class="sect" style="margin-top:0;border:0;padding:0">الصور</div>
+      <p class="note">أضف حتى ${MAX_PICS} صور واضحة (الواجهة، الداخل، العداد). الصور تزيد فرص البيع.</p>
+      <div class="pics" id="pics"></div>
+      <input id="picIn" type="file" accept="image/*" multiple hidden>
+      <div class="err" id="picErr"></div>
+
+      <div class="sect">السيارة</div>
+      <div class="two">
+        <div class="field"><label for="aBr">الماركة</label><select id="aBr">${opts(BRANDS)}</select></div>
+        <div class="field"><label for="aMo">الموديل</label><input id="aMo" placeholder="مثال: سيمبول"><div class="err" data-e="aMo"></div></div>
+      </div>
+      <div class="two">
+        <div class="field"><label for="aYe">سنة الصنع</label><input id="aYe" type="number" inputmode="numeric" placeholder="2019"><div class="err" data-e="aYe"></div></div>
+        <div class="field"><label for="aKm">المسافة (كم)</label><input id="aKm" type="number" inputmode="numeric" placeholder="85000"><div class="err" data-e="aKm"></div></div>
+      </div>
+      <div class="two">
+        <div class="field"><label for="aFu">الوقود</label><select id="aFu">${opts(FUELS)}</select></div>
+        <div class="field"><label for="aGe">ناقل الحركة</label><select id="aGe">${opts(GEARS)}</select></div>
+      </div>
+      <div class="two">
+        <div class="field"><label for="aEn">المحرك</label><input id="aEn" placeholder="مثال: 1.5 dCi"></div>
+        <div class="field"><label for="aCo">اللون</label><select id="aCo">${opts(Object.keys(COLORS))}</select></div>
+      </div>
+      <div class="two">
+        <div class="field"><label for="aPa">الأوراق</label><select id="aPa">${opts(PAPERS)}</select></div>
+        <div class="field"><label for="aCn">حالة السيارة</label><select id="aCn">${opts(CONDS,"جيدة")}</select></div>
+      </div>
+      <div class="field"><label for="aAc">الحوادث</label><select id="aAc">${opts(ACCS)}</select></div>
+
+      <div class="sect">التجهيزات</div>
+      <div class="opts">${OPTIONS.map(o=>`<label><input type="checkbox" name="opt" value="${o}">${o}</label>`).join("")}</div>
+
+      <div class="sect">السعر والتواصل</div>
+      <div class="field"><label for="aPr">السعر بالدينار الجزائري</label><input id="aPr" type="number" inputmode="numeric" placeholder="2350000"><div class="err" data-e="aPr"></div></div>
+      <label class="check"><input type="checkbox" id="aNeg" checked>السعر قابل للتفاوض</label>
+      <div class="two">
+        <div class="field"><label for="aWi">ولاية السيارة</label><select id="aWi">${wopts(m.wilaya||16)}</select></div>
+        <div class="field"><label for="aPh">رقم الهاتف</label><input id="aPh" type="tel" inputmode="tel" value="${esc(m.phone)}"><div class="err" data-e="aPh"></div></div>
+      </div>
+      <div class="field"><label for="aDe">وصف إضافي (اختياري)</label><textarea id="aDe" maxlength="500" placeholder="الصيانة، سبب البيع، ملاحظات..."></textarea></div>
+      <div class="formerr" id="adErr"></div>
+      <button class="btn" style="width:100%" type="submit" id="adSubmit">نشر الإعلان</button>
+    </form>`);
+  drawPics();
+}
+function drawPics(){
+  $("#pics").innerHTML = pending.map((p,i)=>`<div class="pic"><img src="${p.url}" alt=""><button type="button" data-rm="${i}" aria-label="حذف الصورة">×</button></div>`).join("") +
+    (pending.length<MAX_PICS?`<button type="button" class="addpic" id="addPic">+ صورة</button>`:"");
+}
+async function compress(file){
+  const bmp = await createImageBitmap(file);
+  const s = Math.min(1, 1280/Math.max(bmp.width,bmp.height));
+  const cv = document.createElement("canvas"); cv.width = Math.round(bmp.width*s); cv.height = Math.round(bmp.height*s);
+  cv.getContext("2d").drawImage(bmp,0,0,cv.width,cv.height);
+  return new Promise(res=>cv.toBlob(b=>res(b),"image/jpeg",0.8));
+}
+async function addPics(files){
+  $("#picErr").textContent = "";
+  for(const f of [...files]){
+    if(pending.length>=MAX_PICS) break;
+    if(!f.type.startsWith("image/")) continue;
+    try{ const blob = await compress(f); pending.push({blob,url:URL.createObjectURL(blob)}); }
+    catch(e){ $("#picErr").textContent = "تعذر قراءة إحدى الصور"; }
+  }
+  drawPics();
+}
+async function submitAd(e){
+  e.preventDefault();
+  const v = id => $("#"+id).value.trim();
+  const year=Number(v("aYe")), km=Number(v("aKm")), price=Number(v("aPr")), maxY=new Date().getFullYear()+1;
+  const phone = v("aPh").replace(/[\s.-]/g,"");
+  const errs = {};
+  if(!v("aMo")) errs.aMo = "اكتب موديل السيارة";
+  if(!year || year<1980 || year>maxY) errs.aYe = `أدخل سنة بين 1980 و ${maxY}`;
+  if(v("aKm")==="" || km<0) errs.aKm = "أدخل المسافة بالكيلومتر";
+  if(!price || price<100000) errs.aPr = "أدخل السعر بالدينار (100000 دج على الأقل)";
+  if(!/^0[567]\d{8}$/.test(phone)) errs.aPh = "رقم جزائري صحيح، مثال: 0550123456";
+  document.querySelectorAll(".err[data-e]").forEach(el=>{ const m=errs[el.dataset.e]; el.textContent=m||""; $("#"+el.dataset.e).classList.toggle("invalid",!!m); });
+  $("#picErr").textContent = pending.length ? "" : "أضف صورة واحدة على الأقل";
+  const first = Object.keys(errs)[0];
+  if(first){ $("#"+first).focus(); return; }
+  if(!pending.length){ $("#pics").scrollIntoView({block:"center"}); return; }
+
+  const btn = $("#adSubmit"); btn.disabled = true; btn.textContent = "جارٍ رفع الصور...";
+  $("#adErr").textContent = "";
+  try{
+    const urls = [];
+    for(const [i,p] of pending.entries()){
+      const path = `${user.id}/${Date.now()}-${i}.jpg`;
+      const {error} = await sb.storage.from("car-photos").upload(path,p.blob,{contentType:"image/jpeg"});
+      if(error) throw error;
+      urls.push(sb.storage.from("car-photos").getPublicUrl(path).data.publicUrl);
+    }
+    btn.textContent = "جارٍ النشر...";
+    const cn = v("aCo");
+    const {error} = await sb.from("cars").insert({
+      owner_id:user.id, brand:v("aBr"), model:v("aMo"), year, km, price, negotiable:$("#aNeg").checked,
+      fuel:v("aFu"), gear:v("aGe"), color:COLORS[cn], color_name:cn, engine:v("aEn")||null,
+      papers:v("aPa"), condition:v("aCn"), accident:v("aAc"),
+      options:[...document.querySelectorAll("input[name=opt]:checked")].map(x=>x.value),
+      description:v("aDe")||null, wilaya:Number(v("aWi")), phone, photos:urls
+    });
+    if(error) throw error;
+    closeSheet(); toast("تم نشر الإعلان"); view="mine"; await loadCars();
+  }catch(err){
+    $("#adErr").textContent = "تعذر النشر. تحقق من الاتصال وأعد المحاولة.";
+    btn.disabled = false; btn.textContent = "نشر الإعلان";
+  }
+}
+async function deleteCar(id){
+  const c = cars.find(x=>x.id==id); if(!c || !confirm("حذف هذا الإعلان نهائياً؟")) return;
+  const paths = (c.photos||[]).map(u=>decodeURIComponent(u.split("/car-photos/")[1]||"")).filter(Boolean);
+  if(paths.length) await sb.storage.from("car-photos").remove(paths);
+  const {error} = await sb.from("cars").delete().eq("id",id);
+  if(error) return toast("تعذر حذف الإعلان");
+  closeSheet(); toast("تم حذف الإعلان"); await loadCars();
+}
+
+/* ---------- events ---------- */
+["q","fWilaya","fBrand","fPrice","fSort"].forEach(id=>$("#"+id).addEventListener("input",render));
+$("#reset").addEventListener("click",()=>{ ["q","fWilaya","fBrand","fPrice"].forEach(i=>$("#"+i).value=""); render(); });
+$("#mineBtn").addEventListener("click",()=>{ view = view==="mine"?"all":"mine"; render(); });
+$("#list").addEventListener("click",e=>{
+  const b = e.target.closest(".row"); if(b) return showCar(b.dataset.id);
+  if(e.target.id==="retry") loadCars();
+  if(e.target.id==="emptyAdd") startAdd();
+});
+function startAdd(){
+  if(!configured || !sb) return toast("أكمل إعداد قاعدة البيانات أولاً");
+  if(!user) return showAuth("signup","أنشئ حساباً مجانياً لتنشر إعلانك.");
+  showForm();
+}
+$("#addBtn").addEventListener("click",startAdd);
+$("#userBtn").addEventListener("click",()=>{
+  if(!configured || !sb) return toast("أكمل إعداد قاعدة البيانات أولاً");
+  user ? showAccount() : showAuth("login");
+});
+$("#ov").addEventListener("click",async e=>{
+  if(e.target.id==="ov" || e.target.closest(".close")) return closeSheet();
+  const t = e.target.closest("[data-tab]"); if(t) return showAuth(t.dataset.tab);
+  const d = e.target.closest("[data-del]"); if(d) return deleteCar(d.dataset.del);
+  const g = e.target.closest("[data-go]");
+  if(g){ if(g.dataset.go==="mine"){ view="mine"; closeSheet(); render(); } else { await sb.auth.signOut(); view="all"; closeSheet(); toast("تم تسجيل الخروج"); } return; }
+  const rm = e.target.closest("[data-rm]"); if(rm){ pending.splice(Number(rm.dataset.rm),1); drawPics(); return; }
+  if(e.target.id==="addPic") $("#picIn")?.click();
+});
+$("#ov").addEventListener("change",e=>{ if(e.target.id==="picIn"){ addPics(e.target.files); e.target.value=""; } });
+$("#ov").addEventListener("submit",e=>{ if(e.target.id==="authForm") submitAuth(e); if(e.target.id==="adForm") submitAd(e); });
+document.addEventListener("keydown",e=>{ if(e.key==="Escape") closeSheet(); });
+
+/* ---------- start ---------- */
+(async function init(){
+  fillSelects(); render();
+  if(!configured || !window.supabase) return;
+  sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  const {data} = await sb.auth.getSession(); user = data.session?.user || null; paintUser();
+  sb.auth.onAuthStateChange((_ev,s)=>{ user = s?.user || null; paintUser(); render(); });
+  await loadCars();
+})();
+</script>
+</body>
+</html>
